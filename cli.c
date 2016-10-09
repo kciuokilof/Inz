@@ -57,14 +57,22 @@ Writen(int fd, void *ptr, size_t nbytes)
 
 InitCommunication(sockfd,sensorid){
 
-	int			n,recvint[EnUnitSize];
+	int			sendint[10],recvint[EnUnitSize];
+	ssize_t		n;
 	FILE		*fp;
 	char		sendline[70];
-
-	Writen(sockfd, &sensorid, sizeof(int)*2);
+	srand (time(NULL));
+	for(n=0; n<10;n++){
+		sendint[n]=rand();
+		printf("zapycham bufor : %d\n",sendint[n]);
+		
+		}
+		sendint[0]=sensorid;
+		sendint[10]='\0';
+	Writen(sockfd, sendint, sizeof(int)*10 );
 	//Początek wymiany danych
 	while ( (n = read(sockfd, recvint, sizeof(int)*EnUnitSize)) > 0) {
-		recvint[n] = 0;	/* null terminate */
+		recvint[n] = '\0';	/* null terminate */
 		printf("\nConnection with central unit %d\ninitialization number: %d %d %d %d\n", recvint[0],recvint[1],recvint[2],recvint[3],recvint[4]);
 		if(n==sizeof(int)*EnUnitSize)
 			break;
@@ -83,12 +91,7 @@ InitCommunication(sockfd,sensorid){
 
 }
 
-SendTemperature(){
 
-
-
-
-}
 
 int
 main(int argc, char **argv)
@@ -180,51 +183,10 @@ main(int argc, char **argv)
 		fprintf(stderr,"connect: %s\n", strerror(errno));
 		return 1;
 	}
-
-	len = sizeof(rcvbuf);
-	if( getsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, &len)== -1) {
-		fprintf(stderr,"getsockopt error (5) : %s\n", strerror(errno));
-		return 5;
-
-	}
-	len = sizeof(mss);
-	if( getsockopt(sockfd, IPPROTO_TCP, TCP_MAXSEG, &mss, &len) == -1){
-		fprintf(stderr,"getsockopt error (6) : %s\n", strerror(errno));
-		return 6;
-	}
-	printf("After connect: SO_RCVBUF = %d, MSS = %d\n", rcvbuf, mss);
-
-	int time_start=0;
-	if( gettimeofday(&start,0) != 0 ){
-		fprintf(stderr,"gettimeofday error : %s\n", strerror(errno));
-	}else{
-		time_start=1;
-	}
-	int count=0;
-	unsigned long size=0;
-	int sendint[2];
-	sendint[0]=sensorid;
-	sendint[1]=0;
-	sendint[2]='\0';
-
-	if (n < 0)
-		fprintf(stderr,"read error : %s\n", strerror(errno));
-	int s;
-	if( gettimeofday(&stop,0) != 0 ){
-		fprintf(stderr,"gettimeofday error : %s\n", strerror(errno));
-	}else{
-		if(time_start == 1){
-			s=(int)((stop.tv_sec*1000000 + stop.tv_usec) - (start.tv_sec*1000000 + start.tv_usec));
-			double tr = (size*8.0)/(s);
-		    fprintf(stderr,"Reading from socket in: %d ms, : in %d segments (%lu)(%lf mbit/s)\n", s/1000, count, size, tr );
-		}
-	 
-	}
+	
 	//snprintf(sendline, sizeof(sendline),"Wiadomosc");
-	sleep(2);
-	SendTemperature();
-
-
+	
+	InitCommunication(sockfd,sensorid);
 	
 	
 	fflush(stdout);

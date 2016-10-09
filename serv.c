@@ -119,6 +119,38 @@ printf("\nsesnor com num %d\n",sensors);
 	close(currfd);
 	return activeconns;
 }
+int ReadingTemp(currfd,activeconns,tab,sensorid){
+	int recvint,n;
+	char	sendline[70];
+	FILE *TemperatureArray;
+	time_t rawtime;
+	struct tm * timeinfo;
+	time(&rawtime);
+	timeinfo=localtime(&rawtime);
+	
+	if((n = read(currfd, &recvint, sizeof(int))) == -1) {
+			// Closing the descriptor will make epoll remove it from the set of descriptors which are monitored.
+		perror("read error - closing connection");
+		close(currfd);
+		activeconns --;
+		return activeconns;
+	}
+		// We successfully read from the socket.
+	TemperatureArray = fopen ("TemperatureArray", "a");
+	if (TemperatureArray!=NULL){
+  			snprintf(sendline, sizeof(sendline),"%s-%d-%d\n", asctime(timeinfo), sensorid, recvint);
+    		fputs (sendline,TemperatureArray);
+    		fclose (TemperatureArray);
+  		}
+  		else{
+  			perror("openfile error"); 		
+  			return 0;
+  		}
+	
+	
+	
+	return activeconns;
+	}
 
 
 int
@@ -157,11 +189,11 @@ main(int argc, char **argv)
 	int debug = 0;
 	int  **				tab;
 	FILE *				fp;
-	int					listenfd, connfd, sockfd, sensors,recvint[2];
+	int					listenfd, connfd, sensors,recvint[10];
 	pid_t				childpid;
 	socklen_t			clilen;
 	struct sockaddr_in6	cliaddr, servaddr;
-	int					i,j, maxi, maxfd, n; 
+	int					i,j, maxi, maxfd, n, k; 
 	int					nready, s;
 	char 				addr_buf[INET6_ADDRSTRLEN+1];
 	struct 				timeval start, stop;
@@ -267,7 +299,7 @@ main(int argc, char **argv)
 			if(iter > 99) iter=0;
 			ss[iter]=s;
 			long sum;
-			int k;
+			
 			for(k=0; k < count; k++) sum+=ss[iter];	
 			iter++; 
 			s_r=sum/count; 	evn_r = evn; 	activeconns_r =  activeconns;
@@ -287,7 +319,7 @@ main(int argc, char **argv)
 			printf ("New events=%d, active connections: %d\n", nready, activeconns);
 			
 	for (i = 0; i < nready; i++) {	/* check all clients for data */
-
+	printf("\n\n\ncheck i = %d\n",i);
 	if( gettimeofday(&start,0) != 0 ){
 		fprintf(stderr,"gettimeofday error : %s\n", strerror(errno));
 	}else{
@@ -318,7 +350,7 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 				close(connfd);
 				continue;
 		   }
-		   ev.events = EPOLLOUT ; // available for input and non edge_triggered
+		   ev.events =  EPOLLIN  ; // available for input and non edge_triggered
 		   ev.data.fd = connfd;
 		   if (-1 == epoll_ctl(epollfd, EPOLL_CTL_ADD, connfd, &ev)){
 				perror("epoll_ctl new connection error");
@@ -326,6 +358,7 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 				continue;
 		   }
 		   activeconns ++;
+		   
 		   continue;
 	    } //end of epoll
 //end of TCP listen socket
@@ -333,12 +366,12 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 		currfd = events[i].data.fd;
 		if (-1 == epoll_ctl(epollfd, EPOLL_CTL_DEL, currfd, &ev)){
 				perror("epoll_ctl new connection error");
-				close(connfd);
+				close(currfd);
 				continue;
 		   }
 		if(debug)		printf ("\nRead client\n: events=%d, sockfd = %d\n", nready, currfd);
 		
-		if((n = read(currfd, recvint, sizeof(int)*2)) == -1) {
+		if((n = read(currfd, recvint, sizeof (int)*10)) == -1) {
 			// Closing the descriptor will make epoll remove it from the set of descriptors which are monitored.
 		perror("read error - closing connection");
 		close(currfd);
@@ -346,7 +379,7 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 		return activeconns;
 	}
 		// We successfully read from the socket. Check if there is data
-	else if(n == 0) {
+	 if( n==0) {
 		printf("\nEOF\n");
 			// The socket sent EOF.
 			// Closing the descriptor will make epoll remove it from the set of descriptors which are monitored.
@@ -355,29 +388,54 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 		return activeconns;
 		
 	}
+	recvint[10]='\0';
+	for(k=0; k<10;k++){
+		
+		printf("Dane : %d\n",recvint[k]);
+		
+		}
 	printf("\nSensor send his ID : %d\n",recvint[0]);
-	for (i=0;i<sensors;i++){
-		if(tab[i][0]==recvint[0]){
-			if(tab[i][5]!=0){
+	for (k=0;k<sensors;k++){
+		if(tab[k][0]==recvint[0]){
+			if(tab[k][5]!=0){
+				
+				//Kod do obsługi sensorów z ustaionymi parametrami szyfrowania.
 				printf("sensor id matched, encryption established\n");
-				close(currfd);
+				
+				ReadingTemp(currfd,activeconns,recvint[0]);
+				
 
 			}
 
 			else{
+				//Kod do obsługi sensorów z nie ustaionymi parametrami szyfrowania.
 				printf("sensor id matched\n");
 				activeconns=SensorCommunication(currfd,activeconns,i,tab);
 				break;
 			}
 		}
 	}
+	
 	for (j = 0; j < sensors; j++){
-		for (i = 0; i < 10; i++){
-        	printf("%d tab is: %d \n\n",i,tab[j][i]);
+		for (k = 0; k < 10; k++){
+        	printf("%d tab is: %d \n\n",k,tab[j][k]);
 		}
 	}
 //epoll end
-	}
+}
 	}
 }
 
+
+
+
+
+
+
+
+
+
+	
+	
+	
+	
