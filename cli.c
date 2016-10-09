@@ -24,6 +24,7 @@
 #define SA      struct sockaddr
 #define MAXLINE 2048
 #define	SENSORID 1
+#define enTTL 300
 #define EnUnitSize 5
 writen(int fd, const void *vptr, size_t n)
 {
@@ -54,7 +55,42 @@ Writen(int fd, void *ptr, size_t nbytes)
 		perror("writen error");
 }
 
-
+SendingTemerature(sockfd,sensorid){
+	int			sendint[10],recvint[EnUnitSize],temperature,ttl,initnum[4];
+	int			n;
+	FILE		*fp;
+	char		sendline[70];
+	initnum[4]='\0';
+	fp = fopen ("ininum.txt","r");
+	fscanf (fp, "%d", &ttl);
+	for(n=0;n<4;n++){
+		fscanf (fp, "%,d", &initnum[n]);
+		printf ("%d init number: :%d\n",n,initnum[n]);
+	}
+	fclose(fp);
+	
+	srand (time(NULL));
+	for(n=0; n<EnUnitSize;n++){
+		sendint[n]=rand();
+		printf("zapycham bufor : %d\n",sendint[n]);
+		
+		}
+		temperature=69;
+		sendint[0]=sensorid;
+		
+		sendint[1]=temperature;
+	Writen(sockfd, sendint, sizeof(int)*EnUnitSize );
+	//Początek wymiany danych
+	while ( (n = read(sockfd, recvint, sizeof(int)*EnUnitSize)) > 0) {
+		recvint[n] = '\0';	/* null terminate */
+		printf("\nConnection with central unit %d\ninitialization number: %d %d %d %d\n", recvint[0],recvint[1],recvint[2],recvint[3],recvint[4]);
+		if(n==sizeof(int)*EnUnitSize)
+			break;
+	}
+	
+	
+	
+	}
 InitCommunication(sockfd,sensorid){
 
 	int			sendint[10],recvint[EnUnitSize];
@@ -79,7 +115,7 @@ InitCommunication(sockfd,sensorid){
 	}
 	fp = fopen ("ininum.txt","w");
   		if (fp!=NULL){
-  			snprintf(sendline, sizeof(sendline),",%d,%d,%d,%d", recvint[1], recvint[2], recvint[3], recvint[4]);
+  			snprintf(sendline, sizeof(sendline),"%d,%d,%d,%d,%d",enTTL, recvint[1], recvint[2], recvint[3], recvint[4]);
     		fputs (sendline,fp);
     		fclose (fp);
   		}
@@ -187,7 +223,7 @@ main(int argc, char **argv)
 	//snprintf(sendline, sizeof(sendline),"Wiadomosc");
 	
 	InitCommunication(sockfd,sensorid);
-	
+	SendingTemerature(sockfd,sensorid);
 	
 	fflush(stdout);
 
