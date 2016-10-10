@@ -56,26 +56,27 @@ Writen(int fd, void *ptr, size_t nbytes)
 }
 
 SendingTemerature(sockfd,sensorid){
-	int			sendint[10],recvint[EnUnitSize],temperature,ttl,initnum[4];
+	int			sendint[EnUnitSize],recvint[EnUnitSize],temperature,ttl,initnum[4];
 	int			n;
 	FILE		*fp;
-	char		sendline[70];
 	initnum[4]='\0';
 	fp = fopen ("ininum.txt","r");
 	fscanf (fp, "%d", &ttl);
 	for(n=0;n<4;n++){
-		fscanf (fp, "%,d", &initnum[n]);
+		fscanf (fp, ",%d", &initnum[n]);
 		printf ("%d init number: :%d\n",n,initnum[n]);
 	}
 	fclose(fp);
 	
 	srand (time(NULL));
+	sendint[10]='\0';
 	for(n=0; n<EnUnitSize;n++){
 		sendint[n]=rand();
 		printf("zapycham bufor : %d\n",sendint[n]);
 		
 		}
 		temperature=69;
+		
 		sendint[0]=sensorid;
 		
 		sendint[1]=temperature;
@@ -91,7 +92,7 @@ SendingTemerature(sockfd,sensorid){
 	
 	
 	}
-InitCommunication(sockfd,sensorid){
+int InitCommunication(sockfd,sensorid){
 
 	int			sendint[10],recvint[EnUnitSize];
 	ssize_t		n;
@@ -132,15 +133,15 @@ InitCommunication(sockfd,sensorid){
 int
 main(int argc, char **argv)
 {
-	int					sensorid,key[4],ininumbers[4], sockfd, rcvbuf, mss,recvint[EnUnitSize];
+	int					a,sensorid,key[4],ininumbers[4], sockfd, rcvbuf, mss,recvint[EnUnitSize];
 	socklen_t			len;
 	struct sockaddr_in6	servaddr;
 	char				recvline[MAXLINE + 1],sendline[MAXLINE + 1];
 	int err,n;
 	struct timeval start, stop;
 	FILE * fp;
-	if (argc != 2){
-		fprintf(stderr, "ERROR: usage: %s <IPv6 address>\n", argv[0]);
+	if (argc != 3){
+		fprintf(stderr, "ERROR: usage: %s <IPv6 address> <0-1>\n", argv[0]);
 		return 1;
 	}
 
@@ -209,7 +210,7 @@ main(int argc, char **argv)
 		fprintf(stderr,"inet_pton error : %s\n", strerror(errno));
 		return 1;
 	}
-	else if(er=0)
+	else if(er==0)
 	{ printf("Addres error \n");
 		return 1;
 	}
@@ -221,8 +222,11 @@ main(int argc, char **argv)
 	}
 	
 	//snprintf(sendline, sizeof(sendline),"Wiadomosc");
+	a= atoi(argv[2]);
 	
+	if (a==1 )
 	InitCommunication(sockfd,sensorid);
+	else
 	SendingTemerature(sockfd,sensorid);
 	
 	fflush(stdout);

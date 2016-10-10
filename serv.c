@@ -119,26 +119,20 @@ printf("\nsesnor com num %d\n",sensors);
 	close(currfd);
 	return activeconns;
 }
-int ReadingTemp(currfd,activeconns,tab,sensorid){
-	int recvint,n;
+int ReadingTemp(int currfd,int activeconns,int recvint[4]){
 	char	sendline[70];
-	FILE *TemperatureArray;
-	time_t rawtime;
-	struct tm * timeinfo;
+	FILE 	*TemperatureArray;
+	time_t 	rawtime;
+	struct 	tm * timeinfo;
 	time(&rawtime);
 	timeinfo=localtime(&rawtime);
 	
-	if((n = read(currfd, &recvint, sizeof(int))) == -1) {
-			// Closing the descriptor will make epoll remove it from the set of descriptors which are monitored.
-		perror("read error - closing connection");
-		close(currfd);
-		activeconns --;
-		return activeconns;
-	}
+	
 		// We successfully read from the socket.
 	TemperatureArray = fopen ("TemperatureArray", "a");
 	if (TemperatureArray!=NULL){
-  			snprintf(sendline, sizeof(sendline),"%s-%d-%d\n", asctime(timeinfo), sensorid, recvint);
+			printf("przesłano temp:%d ",recvint[1]);
+  			snprintf(sendline, sizeof(sendline),"%s-%d-%d\n", asctime(timeinfo), recvint[0], recvint[1]);
     		fputs (sendline,TemperatureArray);
     		fclose (TemperatureArray);
   		}
@@ -400,9 +394,9 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 			if(tab[k][5]!=0){
 				
 				//Kod do obsługi sensorów z ustaionymi parametrami szyfrowania.
-				printf("sensor id matched, encryption established\n");
+				printf("sensor id matched, encryption established par :%d\n",recvint[1]);
 				
-				ReadingTemp(currfd,activeconns,recvint[0]);
+				ReadingTemp(currfd,activeconns,recvint);
 				
 
 			}
