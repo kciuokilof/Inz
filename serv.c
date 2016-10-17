@@ -659,7 +659,22 @@ void AES128_CBC_decrypt_buffer(uint8_t* output, uint8_t* input, uint32_t length,
 
 #endif // #if defined(CBC) && CBC
 
-
+void inttobyte(int x, uint8_t *lit_int){
+	if(NULL==lit_int)
+		return;
+	lit_int[0]= (uint8_t)(x >> 0);
+	lit_int[1]= (uint8_t)(x >> 8);
+	lit_int[2]= (uint8_t)(x >> 16);
+	lit_int[3]= (uint8_t)(x >> 24);
+	}
+	
+int bytetoint (uint8_t *lit_int){
+	return (uint32_t)lit_int[0] << 0
+	| (uint32_t)lit_int[0] << 8
+	| (uint32_t)lit_int[0] << 16
+	| (uint32_t)lit_int[0] << 24;
+	}
+		
 
 ssize_t						/* Write "n" bytes to a descriptor. */
 writen(int fd, const void *vptr, size_t n)
@@ -751,6 +766,8 @@ int ReadingTemp(int currfd,int activeconns,int recvint[4]){
 	timeinfo=localtime(&rawtime);
 	
 	
+	
+	
 		// We successfully read from the socket.
 	TemperatureArray = fopen ("TemperatureArray", "a");
 	if (TemperatureArray!=NULL){
@@ -764,8 +781,8 @@ int ReadingTemp(int currfd,int activeconns,int recvint[4]){
   			return 0;
   		}
 	
-	
-	
+	close(currfd);
+	activeconns--;
 	return activeconns;
 	}
 
@@ -1019,7 +1036,7 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 				//Kod do obsługi sensorów z ustaionymi parametrami szyfrowania.
 				printf("sensor id matched, encryption established par :%d\n",recvint[1]);
 				
-				ReadingTemp(currfd,activeconns,recvint);
+				activeconns=ReadingTemp(currfd,activeconns,recvint);
 				
 
 			}
