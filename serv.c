@@ -821,6 +821,7 @@ int
 main(int argc, char **argv)
 {
 	int debug = 0;
+	uint8_t				recv8[20],test8[4];
 	int  **				tab;
 	FILE *				fp;
 	int					listenfd, connfd, sensors,recvint[10];
@@ -843,7 +844,7 @@ main(int argc, char **argv)
 	int epollfd, eventstriggered, currfd;
 	struct epoll_event events[MAXEVENTS];
 	struct epoll_event ev;
-	
+	recv8[20]='\0';
 
 	fp = fopen ("passwd", "r");
 	if (fp == 0) {
@@ -1005,7 +1006,7 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 		   }
 		if(debug)		printf ("\nRead client\n: events=%d, sockfd = %d\n", nready, currfd);
 		
-		if((n = read(currfd, recvint, sizeof (int)*10)) == -1) {
+		if((n = read(currfd, recv8, sizeof (uint8_t)*EnUnitSize*4)) == -1) {
 			// Closing the descriptor will make epoll remove it from the set of descriptors which are monitored.
 		perror("read error - closing connection");
 		close(currfd);
@@ -1023,11 +1024,20 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 		
 	}
 	recvint[10]='\0';
-	for(k=0; k<10;k++){
-		
-		printf("Dane : %d\n",recvint[k]);
-		
+	for (k=0;k<20;k++){
+		printf("received DATA uint8 :%u\n",recv8[k]);
 		}
+	for (k=0;k<5;k++){
+		recvint[k]=bytetoint(&recv8[k*4]);
+		printf("received DATA int :%d\n ",recvint[k]);
+		}
+		k=1;
+		inttobyte(k,&test8[0]);
+		for (k=0;k<4;k++){
+		printf("test DATA uint8 :%u\n",test8[k]);
+		}
+		j=bytetoint(&test8[0]);
+		printf("test DATA int :%d\n",j);
 	printf("\nSensor send his ID : %d\n",recvint[0]);
 	for (k=0;k<sensors;k++){
 		if(tab[k][0]==recvint[0]){

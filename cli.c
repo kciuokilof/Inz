@@ -700,30 +700,17 @@ void SendingTemerature(sockfd,sensorid){
 	int			sendint[EnUnitSize],recvint[EnUnitSize],temperature,ttl,initnum[4];
 	int			n;
 	FILE		*fp;
-	int senddata[4], recvdata[4],iv[4], key[4],k;
-	uint8_t send8[16], recv8[16], iv8[16], key8[16];
+	int 		senddata[5], recvdata[5],iv[4], key[4],k;
+	uint8_t send8[20], recv8[20], iv8[16], key8[16];
 	uint32_t  send32;
 	uint32_t *	rec32;
 	srand( time( NULL ) );
-	senddata[4]='\0';
-	for (k=0;k<4;k++){
+	senddata[5]='\0';
+	for (k=0;k<5;k++){
 		senddata[k]=rand();
 		printf("\n DATA 1: %d\n",senddata[k]);
 	}
 	iv[4]='\0';
-	/*for (k=0;k<4;k++){
-		iv[k]=rand();
-		printf("\nDATA 2:%d\n",iv[k]);
-	}
-	key[4]='\0';
-	for (k=0;k<4;k++){
-		key[k]=rand();
-		printf("\nDATA 3 :%d\n",key[k]);
-	}
-		 printf("\nprzeslano\n");
-
-
-	 */
 	 temperature=69;
 	 senddata[0]=sensorid;
 	 senddata[1]=temperature;
@@ -742,54 +729,36 @@ void SendingTemerature(sockfd,sensorid){
 		printf ("%d klucz :%d\n",n,key[n]);
 	}
 	fclose(fp);
-	 printf("data to send:%d\n ",senddata[0]);
- 	 printf("data to send:%u\n ",send32);
- 
- 	 send8[16]='\0';
+	 printf("data to send:%d-%d\n ",senddata[0],senddata[1]);
+ 	 send8[20]='\0';
  	 iv8[16]='\0';
- 	 recv8[16]='\0';
+ 	 recv8[20]='\0';
  	 key8[16]='\0';
+ 	 for (k=0;k<5;k++){
+		inttobyte(senddata[k],&send8[k*4]);
+		
+		}
 	 for (k=0;k<16;k++){
 		printf("DATA uint8 :%u\n",send8[k]);
 		}
-		for (k=0;k<4;k++){
-		inttobyte(senddata[k],&send8[k*4]);
-		inttobyte(key[k],&key8[k*4]);
-		inttobyte(iv[k],&iv8[k*4]);
-		}
 		
- 	
-	// printf("data to send:%u\n ",senddata[0]);
-
-	AES128_CBC_encrypt_buffer(&send8[0], &recv8[0], KEYLEN, &key[0], &iv[0]);
-	for (k=0;k<16;k++){
+		
+	AES128_CBC_encrypt_buffer(&send8[4], &recv8[4], KEYLEN, &key[0], &iv[0]);
+	//Wypełnianie pierwszego bajtu informacją o sensrto id
+	recv8[0]=send8[0];
+	recv8[1]=send8[1];
+	recv8[2]=send8[2];
+	recv8[3]=send8[3];
+	
+	for (k=0;k<20;k++){
 		printf("encrypted DATA uint8 :%u\n",recv8[k]);
 		}
-	for (k=0;k<4;k++){
+	for (k=0;k<5;k++){
 		recvdata[k]=bytetoint(&recv8[k*4]);
 		printf("encypted data :%d\n ",recvdata[k]);
 		}
-	AES128_CBC_decrypt_buffer(&recv8[0], &send8[0], KEYLEN, &key[0], &iv[0]);
 	
-	for (k=0;k<4;k++){
-		recvdata[k]=bytetoint(&send8[k*4]);
-		printf("data receved:%d\n ",senddata[k]);
-		}
-	
-	
-	
-	initnum[4]='\0';
-	
-	
-	srand (time(NULL));
-	sendint[10]='\0';
-	for(n=0; n<EnUnitSize;n++){
-		sendint[n]=rand();
-		printf("zapycham bufor : %d\n",sendint[n]);
-		
-		}
-		
-	Writen(sockfd, sendint, sizeof(int)*EnUnitSize );
+	Writen(sockfd, sendint, sizeof(uint8_t)*EnUnitSize*4 );
 	//Początek wymiany danych
 	while ( (n = read(sockfd, recvint, sizeof(int)*EnUnitSize)) > 0) {
 		recvint[n] = '\0';	/* null terminate */
@@ -803,19 +772,34 @@ void SendingTemerature(sockfd,sensorid){
 	}
 int InitCommunication(sockfd,sensorid){
 
-	int			sendint[10],recvint[EnUnitSize];
+	int			sendint[10],recvint[EnUnitSize],k;
 	ssize_t		n;
+	uint8_t		send8[EnUnitSize*4];
 	FILE		*fp;
 	char		sendline[70];
 	srand (time(NULL));
-	for(n=0; n<10;n++){
+	for(n=0; n<5;n++){
 		sendint[n]=rand();
 		printf("zapycham bufor : %d\n",sendint[n]);
 		
 		}
+		
 		sendint[0]=sensorid;
-		sendint[10]='\0';
-	Writen(sockfd, sendint, sizeof(int)*10 );
+		sendint[5]='\0';
+		send8[EnUnitSize*4]='\0';
+		for (k=0;k<5;k++){
+			
+		inttobyte(sendint[k],&send8[k*4]);
+		
+		}
+		for (k=0;k<20;k++){
+			printf(" DATA to send uint8 :%u\n",send8[k]);
+		}
+		for (k=0;k<5;k++){
+		sendint[k]=bytetoint(&send8[k*4]);
+		printf("encypted data :%d\n ",sendint[k]);
+		}
+	Writen(sockfd, send8, sizeof(uint8_t)*EnUnitSize*4 );
 	//Początek wymiany danych
 	while ( (n = read(sockfd, recvint, sizeof(int)*EnUnitSize)) > 0) {
 		recvint[n] = '\0';	/* null terminate */
@@ -833,7 +817,7 @@ int InitCommunication(sockfd,sensorid){
   			perror("openfile error"); 		
   			return 0;
   		}
-
+	
 
 }
 
