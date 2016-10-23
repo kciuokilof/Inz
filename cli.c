@@ -662,9 +662,9 @@ void inttobyte(int x, uint8_t *lit_int){
 	
 int bytetoint (uint8_t *lit_int){
 	return (uint32_t)lit_int[0] << 0
-	| (uint32_t)lit_int[0] << 8
-	| (uint32_t)lit_int[0] << 16
-	| (uint32_t)lit_int[0] << 24;
+	| (uint32_t)lit_int[1] << 8
+	| (uint32_t)lit_int[2] << 16
+	| (uint32_t)lit_int[3] << 24;
 	}
 		
 writen(int fd, const void *vptr, size_t n)
@@ -743,8 +743,8 @@ void SendingTemerature(sockfd,sensorid){
 		}
 		
 		
-	AES128_CBC_encrypt_buffer(&send8[4], &recv8[4], KEYLEN, &key[0], &iv[0]);
-	//Wypełnianie pierwszego bajtu informacją o sensrto id
+	AES128_CBC_encrypt_buffer(&recv8[4],&send8[4],  KEYLEN, &key[0], &iv[0]);
+	//Wypełnianie pierwszego bajtu informacją o sensor. id
 	recv8[0]=send8[0];
 	recv8[1]=send8[1];
 	recv8[2]=send8[2];
@@ -758,7 +758,7 @@ void SendingTemerature(sockfd,sensorid){
 		printf("encypted data :%d\n ",recvdata[k]);
 		}
 	
-	Writen(sockfd, sendint, sizeof(uint8_t)*EnUnitSize*4 );
+	Writen(sockfd, recv8, sizeof(uint8_t)*EnUnitSize*4 );
 	//Początek wymiany danych
 	while ( (n = read(sockfd, recvint, sizeof(int)*EnUnitSize)) > 0) {
 		recvint[n] = '\0';	/* null terminate */
@@ -767,9 +767,10 @@ void SendingTemerature(sockfd,sensorid){
 			break;
 	}
 	
-	
-	
-	}
+
+}
+
+
 int InitCommunication(sockfd,sensorid){
 
 	int			sendint[10],recvint[EnUnitSize],k;
@@ -926,3 +927,4 @@ main(int argc, char **argv)
 
 	exit(0);
 }
+
