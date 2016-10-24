@@ -745,7 +745,7 @@ SequenceNumberChoose(int sockfd){//and send
 
 int
 SensorCommunication(int currfd, int activeconns, int sensors, int **tab){
-	ssize_t		n;	
+	
 	int 		k,sensorid,*sek;
 printf("\nsesnor com num %d\n",sensors);
 	sek=SequenceNumberChoose(currfd);
@@ -764,23 +764,33 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 	struct 	tm * timeinfo;
 	time(&rawtime);
 	timeinfo=localtime(&rawtime);
-	uint8_t send8[16], iv8[16], key8[16],test8[4];
-	int 		senddata[5], recvdata[4],iv[4], key[4],k;
-	
-	
-	for (k=0;k<4;k++){
-		inttobyte(tab[arrayco][k],&key8[k*4]);
-		inttobyte(tab[arrayco][k+6],&iv8[k*4]);
-		
-	}
+	uint8_t send8[16], iv8[16], key8[16];
+	int 		 recvdata[4],k;
 	recvdata[4]='\0';
 	send8[16]='\0';
  	iv8[16]='\0';
  	key8[16]='\0';
+	
+	
+	for (k=0;k<4;k++){
+		inttobyte(tab[arrayco][k+1],&key8[k*4]);
+		inttobyte(tab[arrayco][k+6],&iv8[k*4]);
+		
+			printf(" test!!! %u \n",key8[0]);
+	}
+	
  	 for (k=0;k<20;k++){
 		printf("recived DATA uint8 :%u\n",recv8[k]);
 		}
-		AES128_CBC_decrypt_buffer(&send8[0],&recv8[4], KEYLEN, &key[0], &iv[0]);
+		
+	for (k=0;k<16;k++){
+		printf("recived key uint8 :%u\n",key8[k]);
+		}
+		printf(" test!!! %u \n",key8[0]);
+		for (k=0;k<16;k++){
+		printf("recived iv uint8 :%u\n",iv8[k]);
+		}
+		AES128_CBC_decrypt_buffer(&send8[0],&recv8[4], KEYLEN, &key8[0], &iv8[0]);
 		
 	for (k=0;k<16;k++){
 		printf("decrypted DATA uint8 :%u\n",send8[k]);

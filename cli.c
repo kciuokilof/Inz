@@ -729,6 +729,23 @@ void SendingTemerature(sockfd,sensorid){
 		printf ("%d klucz :%d\n",n,key[n]);
 	}
 	fclose(fp);
+	for (k=0;k<4;k++){
+		printf("recived key int :%d\n",key[k]);
+		}
+		for (k=0;k<4;k++){
+		printf("recived iv int :%d\n",iv[k]);
+		}
+	for (k=0;k<4;k++){
+		inttobyte(key[k],&key8[k*4]);
+		inttobyte(iv[k],&iv8[k*4]);
+		
+	}
+	for (k=0;k<16;k++){
+		printf("recived key uint8 :%u\n",key8[k]);
+		}
+		for (k=0;k<16;k++){
+		printf("recived iv uint8 :%u\n",iv8[k]);
+		}
 	 printf("data to send:%d-%d\n ",senddata[0],senddata[1]);
  	 send8[20]='\0';
  	 iv8[16]='\0';
@@ -743,7 +760,7 @@ void SendingTemerature(sockfd,sensorid){
 		}
 		
 		
-	AES128_CBC_encrypt_buffer(&recv8[4],&send8[4],  KEYLEN, &key[0], &iv[0]);
+	AES128_CBC_encrypt_buffer(&recv8[4],&send8[4],  KEYLEN, &key8[0], &iv8[0]);
 	//Wypełnianie pierwszego bajtu informacją o sensor. id
 	recv8[0]=send8[0];
 	recv8[1]=send8[1];
