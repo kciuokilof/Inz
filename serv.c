@@ -765,7 +765,7 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 	time(&rawtime);
 	timeinfo=localtime(&rawtime);
 	uint8_t send8[16], iv8[16], key8[16];
-	int 		 recvdata[4],k;
+	int 		 recvdata[4],k,key[4];
 	recvdata[4]='\0';
 	send8[16]='\0';
  	iv8[16]='\0';
@@ -775,26 +775,12 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 	for (k=0;k<4;k++){
 		inttobyte(tab[arrayco][k+1],&key8[k*4]);
 		inttobyte(tab[arrayco][k+6],&iv8[k*4]);
-		
-			printf(" test!!! %u \n",key8[0]);
+
 	}
 	
- 	 for (k=0;k<20;k++){
-		printf("recived DATA uint8 :%u\n",recv8[k]);
-		}
-		
-	for (k=0;k<16;k++){
-		printf("recived key uint8 :%u\n",key8[k]);
-		}
-		printf(" test!!! %u \n",key8[0]);
-		for (k=0;k<16;k++){
-		printf("recived iv uint8 :%u\n",iv8[k]);
-		}
 		AES128_CBC_decrypt_buffer(&send8[0],&recv8[4], KEYLEN, &key8[0], &iv8[0]);
 		
-	for (k=0;k<16;k++){
-		printf("decrypted DATA uint8 :%u\n",send8[k]);
-		}
+	
 	for(k=0;k<4;k++){
 		recvdata[k]=bytetoint(&send8[k*4]);
 		printf("decrypted DATA int :%d\n",recvdata[k]);
@@ -802,8 +788,8 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 		// We successfully read from the socket.
 	TemperatureArray = fopen ("TemperatureArray", "a");
 	if (TemperatureArray!=NULL){
-			printf("przesłano temp:%d ",recvdata[0]);
-  			snprintf(sendline, sizeof(sendline),"%s-%d-%d\n", asctime(timeinfo), recvdata[0], recvdata[1]);
+			printf("przesłano temp:%d romiar temperatury : %d, - %d - %d\n",recvdata[0],sizeof(asctime(timeinfo)),sizeof(timeinfo),sizeof(&rawtime) );
+  			snprintf(sendline, sizeof(sendline),"%s-%d-%d\n", asctime(timeinfo),tab[arrayco][0], recvdata[0]);
     		fputs (sendline,TemperatureArray);
     		fclose (TemperatureArray);
   		}
@@ -1043,13 +1029,11 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 			if(tab[k][5]!=0){
 				
 				//Kod do obsługi sensorów z ustaionymi parametrami szyfrowania.
-				printf("sensor id matched, encryption praramters estaished\n");	
 				activeconns=ReadingTemp(currfd,activeconns,&recv8[0],tab,k);
 			}
 
 			else{
 				//Kod do obsługi sensorów z nie ustaionymi parametrami szyfrowania.
-				printf("sensor id matched\n");
 				activeconns=SensorCommunication(currfd,activeconns,i,tab);
 				break;
 			}

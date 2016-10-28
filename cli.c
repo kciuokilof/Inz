@@ -24,7 +24,6 @@
 #define SA      struct sockaddr
 #define MAXLINE 2048
 #define	SENSORID 1
-#define enTTL 300
 #define EnUnitSize 5
 
 
@@ -740,39 +739,34 @@ void SendingTemerature(sockfd,sensorid){
 		inttobyte(iv[k],&iv8[k*4]);
 		
 	}
-	for (k=0;k<16;k++){
-		printf("recived key uint8 :%u\n",key8[k]);
-		}
-		for (k=0;k<16;k++){
-		printf("recived iv uint8 :%u\n",iv8[k]);
-		}
+	
 	 printf("data to send:%d-%d\n ",senddata[0],senddata[1]);
- 	 send8[20]='\0';
- 	 iv8[16]='\0';
- 	 recv8[20]='\0';
- 	 key8[16]='\0';
+ 	 
  	 for (k=0;k<5;k++){
 		inttobyte(senddata[k],&send8[k*4]);
-		
-		}
-	 for (k=0;k<16;k++){
-		printf("DATA uint8 :%u\n",send8[k]);
-		}
+		}	
 		
 		
-	AES128_CBC_encrypt_buffer(&recv8[4],&send8[4],  KEYLEN, &key8[0], &iv8[0]);
+	AES128_CBC_encrypt_buffer(&recv8[4],&send8[4], KEYLEN, &key8[0], &iv8[0]);
 	//Wypełnianie pierwszego bajtu informacją o sensor. id
 	recv8[0]=send8[0];
 	recv8[1]=send8[1];
 	recv8[2]=send8[2];
 	recv8[3]=send8[3];
 	
-	for (k=0;k<20;k++){
-		printf("encrypted DATA uint8 :%u\n",recv8[k]);
+	for (k=0;k<16;k++){
+		printf("recived ivv uint8 :%u\n",iv8[k]);
+		printf("recived key uint8 :%u\n",key8[k]);
+		printf("recived DAT uint8 :%u\n",recv8[k+4]);
+		printf("decrypt DAT uint8 :%u\n",send8[k+4]);
 		}
 	for (k=0;k<5;k++){
 		recvdata[k]=bytetoint(&recv8[k*4]);
 		printf("encypted data :%d\n ",recvdata[k]);
+		}
+		for (k=0;k<4;k++){
+		key[k]=bytetoint(&key8[k*4]);
+		printf("key after data :%d\n ",key[k]);
 		}
 	
 	Writen(sockfd, recv8, sizeof(uint8_t)*EnUnitSize*4 );
@@ -790,7 +784,7 @@ void SendingTemerature(sockfd,sensorid){
 
 int InitCommunication(sockfd,sensorid){
 
-	int			sendint[10],recvint[EnUnitSize],k;
+	int			sendint[10],recvint[EnUnitSize],k,enTTL;
 	ssize_t		n;
 	uint8_t		send8[EnUnitSize*4];
 	FILE		*fp;
@@ -806,10 +800,10 @@ int InitCommunication(sockfd,sensorid){
 		sendint[5]='\0';
 		send8[EnUnitSize*4]='\0';
 		for (k=0;k<5;k++){
-			
-		inttobyte(sendint[k],&send8[k*4]);
-		
+			inttobyte(sendint[k],&send8[k*4]);
 		}
+		if(send8[4]<10)
+			send8[4]=send8[4]+15;
 		for (k=0;k<20;k++){
 			printf(" DATA to send uint8 :%u\n",send8[k]);
 		}
