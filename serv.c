@@ -36,7 +36,7 @@
 #define MAXEVENTS 200000
 #define	centralunitid 10
 #define EnUnitSize 5
-#define enTTL 300
+
 #ifndef _AES_H_
 #define _AES_H_
 
@@ -659,7 +659,22 @@ void AES128_CBC_decrypt_buffer(uint8_t* output, uint8_t* input, uint32_t length,
 
 #endif // #if defined(CBC) && CBC
 
-
+void inttobyte(int x, uint8_t *lit_int){
+	if(NULL==lit_int)
+		return;
+	lit_int[0]= (uint8_t)(x >> 0);
+	lit_int[1]= (uint8_t)(x >> 8);
+	lit_int[2]= (uint8_t)(x >> 16);
+	lit_int[3]= (uint8_t)(x >> 24);
+	}
+	
+int bytetoint (uint8_t *lit_int){
+	return (uint32_t)lit_int[0] << 0
+	| (uint32_t)lit_int[1] << 8
+	| (uint32_t)lit_int[2] << 16
+	| (uint32_t)lit_int[3] << 24;
+	}
+		
 
 ssize_t						/* Write "n" bytes to a descriptor. */
 writen(int fd, const void *vptr, size_t n)
@@ -729,10 +744,11 @@ SequenceNumberChoose(int sockfd){//and send
 }
 
 int
-SensorCommunication(int currfd, int activeconns, int sensors, int **tab){
-	ssize_t		n;	
-	int 		k,sensorid,*sek;
-printf("\nsesnor com num %d\n",sensors);
+SensorCommunication(int currfd, int activeconns,uint8_t * recv8, int sensors, int **tab){
+	
+	int 		k,sensorid,*sek,enTTL;
+	enTTL=(uint32_t)recv8[4] << 0;
+	printf("\nsesnor com num %d -enTTL send : %d\n",sensors,enTTL);
 	sek=SequenceNumberChoose(currfd);
 	tab[sensors][5]=enTTL;
 	tab[sensors][6]=sek[1];
@@ -742,30 +758,50 @@ printf("\nsesnor com num %d\n",sensors);
 	close(currfd);
 	return activeconns;
 }
-int ReadingTemp(int currfd,int activeconns,int recvint[4]){
+int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int arrayco){
 	char	sendline[70];
 	FILE 	*TemperatureArray;
 	time_t 	rawtime;
 	struct 	tm * timeinfo;
 	time(&rawtime);
 	timeinfo=localtime(&rawtime);
+	uint8_t send8[16], iv8[16], key8[16];
+	int 		 recvdata[4],k,key[4];
+	recvdata[4]='\0';
+	send8[16]='\0';
+ 	iv8[16]='\0';
+ 	key8[16]='\0';
 	
 	
+	for (k=0;k<4;k++){
+		inttobyte(tab[arrayco][k+1],&key8[k*4]);
+		inttobyte(tab[arrayco][k+6],&iv8[k*4]);
+
+	}
+	
+	
+	AES128_CBC_decrypt_buffer(&send8[0],&recv8[4], KEYLEN, &key8[0], &iv8[0]);
+		
+	
+	for(k=0;k<4;k++){
+		recvdata[k]=bytetoint(&send8[k*4]);
+		printf("decrypted DATA int :%d\n",recvdata[k]);
+	}
 		// We successfully read from the socket.
 	TemperatureArray = fopen ("TemperatureArray", "a");
 	if (TemperatureArray!=NULL){
-			printf("przesłano temp:%d ",recvint[1]);
-  			snprintf(sendline, sizeof(sendline),"%s-%d-%d\n", asctime(timeinfo), recvint[0], recvint[1]);
+			printf("przesłano temp:%d romiar temperatury : %d, - %d - %d\n",recvdata[0],sizeof(asctime(timeinfo)),sizeof(timeinfo),sizeof(&rawtime) );
+  			snprintf(sendline, sizeof(sendline),"%s-%d-%d\n", asctime(timeinfo),tab[arrayco][0], recvdata[0]);
     		fputs (sendline,TemperatureArray);
     		fclose (TemperatureArray);
   		}
   		else{
-  			perror("openfile error"); 		
+  			perror("openfile error");
   			return 0;
   		}
 	
-	
-	
+	close(currfd);
+	activeconns--;
 	return activeconns;
 	}
 
@@ -804,6 +840,7 @@ int
 main(int argc, char **argv)
 {
 	int debug = 0;
+	uint8_t				recv8[20],test8[4];
 	int  **				tab;
 	FILE *				fp;
 	int					listenfd, connfd, sensors,recvint[10];
@@ -819,14 +856,13 @@ main(int argc, char **argv)
     socklen_t peer_addr_len;
 	
 	printf("MAX CONNECTIONS = %d\n",MAXEVENTS-2);
-	printf ("size of int :%d\n",sizeof(int));
 	if( argc > 1 )
 		debug = atoi(argv[1]);
 	
 	int epollfd, eventstriggered, currfd;
 	struct epoll_event events[MAXEVENTS];
 	struct epoll_event ev;
-	
+	recv8[20]='\0';
 
 	fp = fopen ("passwd", "r");
 	if (fp == 0) {
@@ -879,8 +915,6 @@ main(int argc, char **argv)
 
 	activeconns +=2;	
 	activeconns_r = activeconns;
-	int time_start=0;
-	int evn;
 	ev.events = EPOLLIN; //Specify which event to listen for
 	ev.data.fd = listenfd; // Specify user data.
 
@@ -907,25 +941,7 @@ main(int argc, char **argv)
 	for ( ; ; ) {
 
 
-	if( gettimeofday(&stop,0) != 0 ){
-		fprintf(stderr,"gettimeofday error : %s\n", strerror(errno));
-	}else{
-		if(time_start == 1){
-			long s =(long)((stop.tv_sec*1000000 + stop.tv_usec) - (start.tv_sec*1000000 + start.tv_usec));
-			if(count < 100) count++;
-			if(iter > 99) iter=0;
-			ss[iter]=s;
-			long sum;
-			
-			for(k=0; k < count; k++) sum+=ss[iter];	
-			iter++; 
-			s_r=sum/count; 	evn_r = evn; 	activeconns_r =  activeconns;
-//		    if(debug) 
-//				fprintf(stderr,"Service of %6d events in %10ld us : active connections: %6d",
-//					evn,s, activeconns);
-			time_start=0;  
-		}
-	}
+	
 	
     	if( (nready = epoll_wait(epollfd, events, MAXEVENTS, -1)) == -1){
            fprintf(stderr,"epoll_wait error : %s\n", strerror(errno));
@@ -937,12 +953,7 @@ main(int argc, char **argv)
 			
 	for (i = 0; i < nready; i++) {	/* check all clients for data */
 	printf("\n\n\ncheck i = %d\n",i);
-	if( gettimeofday(&start,0) != 0 ){
-		fprintf(stderr,"gettimeofday error : %s\n", strerror(errno));
-	}else{
-		time_start=1;
-		evn = nready;
-	}
+	
 
 
 
@@ -988,7 +999,7 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 		   }
 		if(debug)		printf ("\nRead client\n: events=%d, sockfd = %d\n", nready, currfd);
 		
-		if((n = read(currfd, recvint, sizeof (int)*10)) == -1) {
+		if((n = read(currfd, recv8, sizeof (uint8_t)*EnUnitSize*4)) == -1) {
 			// Closing the descriptor will make epoll remove it from the set of descriptors which are monitored.
 		perror("read error - closing connection");
 		close(currfd);
@@ -1006,28 +1017,26 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 		
 	}
 	recvint[10]='\0';
-	for(k=0; k<10;k++){
-		
-		printf("Dane : %d\n",recvint[k]);
-		
+	for (k=0;k<20;k++){
+		printf("received DATA uint8 :%u\n",recv8[k]);
 		}
+	for (k=0;k<5;k++){
+		recvint[k]=bytetoint(&recv8[k*4]);
+		printf("received DATA int :%d\n ",recvint[k]);
+		}
+	
 	printf("\nSensor send his ID : %d\n",recvint[0]);
 	for (k=0;k<sensors;k++){
 		if(tab[k][0]==recvint[0]){
 			if(tab[k][5]!=0){
 				
 				//Kod do obsługi sensorów z ustaionymi parametrami szyfrowania.
-				printf("sensor id matched, encryption established par :%d\n",recvint[1]);
-				
-				ReadingTemp(currfd,activeconns,recvint);
-				
-
+				activeconns=ReadingTemp(currfd,activeconns,&recv8[0],tab,k);
 			}
 
 			else{
 				//Kod do obsługi sensorów z nie ustaionymi parametrami szyfrowania.
-				printf("sensor id matched\n");
-				activeconns=SensorCommunication(currfd,activeconns,i,tab);
+				activeconns=SensorCommunication(currfd,activeconns,&recv8[0],i,tab);
 				break;
 			}
 		}
