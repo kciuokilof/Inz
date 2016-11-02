@@ -36,7 +36,7 @@
 #define MAXEVENTS 200000
 #define	centralunitid 10
 #define EnUnitSize 5
-#define enTTL 300
+
 #ifndef _AES_H_
 #define _AES_H_
 
@@ -744,10 +744,11 @@ SequenceNumberChoose(int sockfd){//and send
 }
 
 int
-SensorCommunication(int currfd, int activeconns, int sensors, int **tab){
+SensorCommunication(int currfd, int activeconns,uint8_t * recv8, int sensors, int **tab){
 	
-	int 		k,sensorid,*sek;
-printf("\nsesnor com num %d\n",sensors);
+	int 		k,sensorid,*sek,enTTL;
+	enTTL=(uint32_t)recv8[4] << 0;
+	printf("\nsesnor com num %d -enTTL send : %d\n",sensors,enTTL);
 	sek=SequenceNumberChoose(currfd);
 	tab[sensors][5]=enTTL;
 	tab[sensors][6]=sek[1];
@@ -778,7 +779,8 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 
 	}
 	
-		AES128_CBC_decrypt_buffer(&send8[0],&recv8[4], KEYLEN, &key8[0], &iv8[0]);
+	
+	AES128_CBC_decrypt_buffer(&send8[0],&recv8[4], KEYLEN, &key8[0], &iv8[0]);
 		
 	
 	for(k=0;k<4;k++){
@@ -1034,7 +1036,7 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 
 			else{
 				//Kod do obsługi sensorów z nie ustaionymi parametrami szyfrowania.
-				activeconns=SensorCommunication(currfd,activeconns,i,tab);
+				activeconns=SensorCommunication(currfd,activeconns,&recv8[0],i,tab);
 				break;
 			}
 		}

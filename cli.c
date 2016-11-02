@@ -696,7 +696,7 @@ Writen(int fd, void *ptr, size_t nbytes)
 }
 
 void SendingTemerature(sockfd,sensorid){
-	int			sendint[EnUnitSize],recvint[EnUnitSize],temperature,ttl,initnum[4];
+	int			sendint[EnUnitSize],recvint[EnUnitSize],temperature,enTTL,initnum[4];
 	int			n;
 	FILE		*fp;
 	int 		senddata[5], recvdata[5],iv[4], key[4],k;
@@ -715,7 +715,7 @@ void SendingTemerature(sockfd,sensorid){
 	 senddata[1]=temperature;
 	 
 	 fp = fopen ("ininum.txt","r");
-	fscanf (fp, "%d", &ttl);
+	fscanf (fp, "%d", &enTTL);
 	for(n=0;n<4;n++){
 		fscanf (fp, ",%d", &iv[n]);
 		printf ("%d init number: :%d\n",n,iv[n]);
@@ -777,8 +777,18 @@ void SendingTemerature(sockfd,sensorid){
 		if(n==sizeof(int)*EnUnitSize)
 			break;
 	}
-	
-
+	enTTL--;
+	printf("\nenTTL send : %d\n",enTTL);
+	fp = freopen ("ininum.txt","w");
+  		if (fp!=NULL){
+  			snprintf(sendline, sizeof(sendline),"%d,%d,%d,%d,%d",enTTL, iv[0], iv[1], iv[2], iv[3]);
+    		fputs (sendline,fp);
+    		fclose (fp);
+  		}
+  		else{
+  			perror("openfile error"); 		
+  			return 0;
+  		}
 }
 
 
@@ -804,12 +814,15 @@ int InitCommunication(sockfd,sensorid){
 		}
 		if(send8[4]<10)
 			send8[4]=send8[4]+15;
+			
+		enTTL=(uint32_t)send8[4] << 0;
+		printf("\nenTTL send : %d\n",enTTL);
 		for (k=0;k<20;k++){
 			printf(" DATA to send uint8 :%u\n",send8[k]);
 		}
 		for (k=0;k<5;k++){
-		sendint[k]=bytetoint(&send8[k*4]);
-		printf("encypted data :%d\n ",sendint[k]);
+			sendint[k]=bytetoint(&send8[k*4]);
+			printf("encypted data :%d\n ",sendint[k]);
 		}
 	Writen(sockfd, send8, sizeof(uint8_t)*EnUnitSize*4 );
 	//Początek wymiany danych
