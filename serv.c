@@ -866,14 +866,7 @@ main(int argc, char **argv)
 	struct epoll_event events[MAXEVENTS];
 	struct epoll_event ev;
 	recv8[20]='\0';
-	n=fork();
-	if(n==0)
-	rc=execlp ("python","python", "cli.py",NULL);
-	if (rc==-1)
-		perror("execlp");
-		
-		
-	sleep(1);
+
 	fp = fopen ("passwd", "r");
 	if (fp == 0) {
 		perror ("open");
