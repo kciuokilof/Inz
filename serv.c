@@ -806,17 +806,13 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 	}
 
 void UpdateSensorFile(void){
-	int n;
+	int n,i,j,rc;
 	n=fork();
 	if(n==0)
 	rc=execlp ("python","python", "cli.py",NULL);
 	if (rc==-1)
 		perror("execlp");
-	for (j = 0; j < sensors; j++){
-		for (k = 0; k < 10; k++){
-        	printf("%d tab is: %d \n\n",k,tab[j][k]);
-		}
-	}
+	
 	
 	}
 int
@@ -1062,7 +1058,7 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 			else{
 				n=n+1;
 				//Kod do obsługi sensorów z nie ustaionymi parametrami szyfrowania.
-				activeconns=SensorCommunication(currfd,activeconns,&recv8[0],i,tab);
+				activeconns=SensorCommunication(currfd,activeconns,&recv8[0],k,tab);
 				break;
 			}
 		}
@@ -1071,6 +1067,11 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 	if(n==0){
 		printf("\nUnknown Sensor ID\n");
 		UpdateSensorFile();
+	}
+	for (j = 0; j < sensors; j++){
+		for (k = 0; k < 10; k++){
+        	printf("%d tab is: %d \n\n",k,tab[j][k]);
+		}
 	}
 //epoll end
 }
