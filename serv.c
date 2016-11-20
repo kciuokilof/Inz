@@ -805,7 +805,20 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 	return activeconns;
 	}
 
-
+void UpdateSensorFile(void){
+	int n;
+	n=fork();
+	if(n==0)
+	rc=execlp ("python","python", "cli.py",NULL);
+	if (rc==-1)
+		perror("execlp");
+	for (j = 0; j < sensors; j++){
+		for (k = 0; k < 10; k++){
+        	printf("%d tab is: %d \n\n",k,tab[j][k]);
+		}
+	}
+	
+	}
 int
 UpadateSensorsNumber(FILE *fp){
 	int sensors;
@@ -829,6 +842,7 @@ UpadateSensorsList(FILE *fp,int sensors){
 			printf(" %d ",array[j][i]);
 		}
 	}
+	close(fp);
 
 return array;
 
@@ -866,7 +880,14 @@ main(int argc, char **argv)
 	struct epoll_event events[MAXEVENTS];
 	struct epoll_event ev;
 	recv8[20]='\0';
-
+	n=fork();
+	if(n==0)
+	rc=execlp ("python","python", "cli.py",NULL);
+	if (rc==-1)
+		perror("execlp");
+		
+		
+	sleep(1);
 	fp = fopen ("passwd", "r");
 	if (fp == 0) {
 		perror ("open");
@@ -1027,17 +1048,19 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 		recvint[k]=bytetoint(&recv8[k*4]);
 		printf("received DATA int :%d\n ",recvint[k]);
 		}
-	
+	n=0;
 	printf("\nSensor send his ID : %d\n",recvint[0]);
 	for (k=0;k<sensors;k++){
 		if(tab[k][0]==recvint[0]){
 			if(tab[k][5]!=0){
-				
+				n=n+1;
 				//Kod do obsługi sensorów z ustaionymi parametrami szyfrowania.
 				activeconns=ReadingTemp(currfd,activeconns,&recv8[0],tab,k);
+				break;
 			}
 
 			else{
+				n=n+1;
 				//Kod do obsługi sensorów z nie ustaionymi parametrami szyfrowania.
 				activeconns=SensorCommunication(currfd,activeconns,&recv8[0],i,tab);
 				break;
@@ -1045,15 +1068,9 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 		}
 	}
 	//aktualizacja bazy informacji o sensorach
-	n=fork();
-	if(n==0)
-	rc=execlp ("python","python", "cli.py",NULL);
-	if (rc==-1)
-		perror("execlp");
-	for (j = 0; j < sensors; j++){
-		for (k = 0; k < 10; k++){
-        	printf("%d tab is: %d \n\n",k,tab[j][k]);
-		}
+	if(n==0){
+		printf("\nUnknown Sensor ID\n");
+		UpdateSensorFile();
 	}
 //epoll end
 }
