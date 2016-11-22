@@ -13,7 +13,7 @@ def deal_with_client(connstream):
 	print data
 	f1 = open("passwd/"+data,'rb')
 	l=f1.read(1024)
-	close(f1)
+	f1.close()
 	connstream.send(l)
 	
 	

@@ -28,7 +28,7 @@
 #ifdef STATS
 #include 	<pthread.h>
 #endif
- 
+#define CUID	10
 #define MAXLINE 10
 #define SA struct sockaddr
 #define LISTENQ 2
@@ -778,10 +778,12 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 		inttobyte(tab[arrayco][k+6],&iv8[k*4]);
 
 	}
-	
-	
 	AES128_CBC_decrypt_buffer(&send8[0],&recv8[4], KEYLEN, &key8[0], &iv8[0]);
-		
+		printf("\nSensor send this:%d \n",send8[15]);
+	if (send8[15]==CUID){
+		printf("Sensor %d authenticated \n",tab[arrayco][0]);
+		tab[arrayco][5]--;
+		}
 	
 	for(k=0;k<4;k++){
 		recvdata[k]=bytetoint(&send8[k*4]);
@@ -790,7 +792,6 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 		// We successfully read from the socket.
 	TemperatureArray = fopen ("TemperatureArray", "a");
 	if (TemperatureArray!=NULL){
-			printf("przesłano temp:%d romiar temperatury : %d, - %d - %d\n",recvdata[0],sizeof(asctime(timeinfo)),sizeof(timeinfo),sizeof(&rawtime) );
   			snprintf(sendline, sizeof(sendline),"%s-%d-%d\n", asctime(timeinfo),tab[arrayco][0], recvdata[0]);
     		fputs (sendline,TemperatureArray);
     		fclose (TemperatureArray);
@@ -1078,16 +1079,6 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 	}
 }
 
-
-
-
-
-
-
-
-
-
-	
 	
 	
 	

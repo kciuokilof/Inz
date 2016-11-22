@@ -22,9 +22,10 @@
 #include	<netinet/tcp.h>		/* for TCP_MAXSEG */
 
 #define SA      struct sockaddr
-#define MAXLINE 2048
-#define	SENSORID 6
-#define EnUnitSize 5
+#define MAXLINE 	2048
+#define	SENSORID 	6
+#define EnUnitSize 	5
+#define CUID		10
 
 
 #ifndef _AES_H_
@@ -746,7 +747,7 @@ void SendingTemerature(sockfd,sensorid){
  	 for (k=0;k<5;k++){
 		inttobyte(senddata[k],&send8[k*4]);
 		}	
-		
+		send8[15]=CUID;//ostatni bajt jest nr ID Central Unit, słuzy d oweryfikacji dobrego deszyfrowania po drugiej stronie
 		
 	AES128_CBC_encrypt_buffer(&recv8[4],&send8[4], KEYLEN, &key8[0], &iv8[0]);
 	//Wypełnianie pierwszego bajtu informacją o sensor. id
