@@ -16,12 +16,18 @@ ssl_sock = ssl.wrap_socket(s,
                            cert_reqs=ssl.CERT_REQUIRED)
 
 ssl_sock.connect(('localhost', 10023))
+f2 = open("CU.conf",'rb')
+l=f2.read(2)
+l=l.replace("\n","",1)
+ssl_sock.send(l)
+data = ssl_sock.recv()
 f= open('passwd','wb')
+f.write(data)
+
 print repr(ssl_sock.getpeername())
 print ssl_sock.cipher()
 print pprint.pformat(ssl_sock.getpeercert())
-data = ssl_sock.recv()
-f.write(data)
+
 f.close()
 print data
 

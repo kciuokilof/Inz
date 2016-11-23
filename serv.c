@@ -28,7 +28,7 @@
 #ifdef STATS
 #include 	<pthread.h>
 #endif
- 
+#define CUID	10
 #define MAXLINE 10
 #define SA struct sockaddr
 #define LISTENQ 2
@@ -758,7 +758,8 @@ SensorCommunication(int currfd, int activeconns,uint8_t * recv8, int sensors, in
 	close(currfd);
 	return activeconns;
 }
-int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int arrayco){
+int 
+ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int arrayco){
 	char	sendline[70];
 	FILE 	*TemperatureArray;
 	time_t 	rawtime;
@@ -771,26 +772,26 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 	send8[16]='\0';
  	iv8[16]='\0';
  	key8[16]='\0';
-	
-	
 	for (k=0;k<4;k++){
 		inttobyte(tab[arrayco][k+1],&key8[k*4]);
 		inttobyte(tab[arrayco][k+6],&iv8[k*4]);
-
 	}
-	
-	
 	AES128_CBC_decrypt_buffer(&send8[0],&recv8[4], KEYLEN, &key8[0], &iv8[0]);
-		
+		printf("\nSensor send this:%d \n",send8[15]);
+	if (send8[15]==CUID){
+		printf("Sensor %d authenticated \n",tab[arrayco][0]);
+		tab[arrayco][5]--;
+		}
 	
 	for(k=0;k<4;k++){
 		recvdata[k]=bytetoint(&send8[k*4]);
 		printf("decrypted DATA int :%d\n",recvdata[k]);
+		tab[arrayco][k+6]=recvdata[k];
 	}
 		// We successfully read from the socket.
+		
 	TemperatureArray = fopen ("TemperatureArray", "a");
 	if (TemperatureArray!=NULL){
-			printf("przesłano temp:%d romiar temperatury : %d, - %d - %d\n",recvdata[0],sizeof(asctime(timeinfo)),sizeof(timeinfo),sizeof(&rawtime) );
   			snprintf(sendline, sizeof(sendline),"%s-%d-%d\n", asctime(timeinfo),tab[arrayco][0], recvdata[0]);
     		fputs (sendline,TemperatureArray);
     		fclose (TemperatureArray);
@@ -805,7 +806,16 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 	return activeconns;
 	}
 
-
+void UpdateSensorFile(void){
+	int n,i,j,rc;
+	n=fork();
+	if(n==0)
+	rc=execlp ("python","python", "cli.py",NULL);
+	if (rc==-1)
+		perror("execlp");
+	
+	
+	}
 int
 UpadateSensorsNumber(FILE *fp){
 	int sensors;
@@ -829,6 +839,7 @@ UpadateSensorsList(FILE *fp,int sensors){
 			printf(" %d ",array[j][i]);
 		}
 	}
+	close(fp);
 
 return array;
 
@@ -866,7 +877,14 @@ main(int argc, char **argv)
 	struct epoll_event events[MAXEVENTS];
 	struct epoll_event ev;
 	recv8[20]='\0';
-
+	n=fork();
+	if(n==0)
+	rc=execlp ("python","python", "cli.py",NULL);
+	if (rc==-1)
+		perror("execlp");
+		
+		
+	sleep(1);
 	fp = fopen ("passwd", "r");
 	if (fp == 0) {
 		perror ("open");
@@ -1027,29 +1045,30 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 		recvint[k]=bytetoint(&recv8[k*4]);
 		printf("received DATA int :%d\n ",recvint[k]);
 		}
-	
+	n=0;
 	printf("\nSensor send his ID : %d\n",recvint[0]);
 	for (k=0;k<sensors;k++){
 		if(tab[k][0]==recvint[0]){
 			if(tab[k][5]!=0){
-				
+				n=n+1;
 				//Kod do obsługi sensorów z ustaionymi parametrami szyfrowania.
 				activeconns=ReadingTemp(currfd,activeconns,&recv8[0],tab,k);
+				break;
 			}
 
 			else{
+				n=n+1;
 				//Kod do obsługi sensorów z nie ustaionymi parametrami szyfrowania.
-				activeconns=SensorCommunication(currfd,activeconns,&recv8[0],i,tab);
+				activeconns=SensorCommunication(currfd,activeconns,&recv8[0],k,tab);
 				break;
 			}
 		}
 	}
 	//aktualizacja bazy informacji o sensorach
-	n=fork();
-	if(n==0)
-	rc=execlp ("python","python", "cli.py",NULL);
-	if (rc==-1)
-		perror("execlp");
+	if(n==0){
+		printf("\nUnknown Sensor ID\n");
+		UpdateSensorFile();
+	}
 	for (j = 0; j < sensors; j++){
 		for (k = 0; k < 10; k++){
         	printf("%d tab is: %d \n\n",k,tab[j][k]);
@@ -1060,16 +1079,6 @@ printf ("\tnew TCP client: events=%d, sockfd = %d, on socket = %d,  activeconns 
 	}
 }
 
-
-
-
-
-
-
-
-
-
-	
 	
 	
 	

@@ -9,9 +9,11 @@ def do_something(connstream, data):
     return False
 
 def deal_with_client(connstream):
-    
-	f = open("passwd",'rb')
-	l=f.read(1024)
+	data=connstream.recv()
+	print data
+	f1 = open("passwd/"+data,'rb')
+	l=f1.read(1024)
+	f1.close()
 	connstream.send(l)
 	
 	
