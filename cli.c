@@ -595,6 +595,8 @@ void AES128_CBC_encrypt_buffer(uint8_t* output, uint8_t* input, uint32_t length,
     Iv = output;
     input += KEYLEN;
     output += KEYLEN;
+    
+    
   }
 
   if(remainders)
@@ -605,48 +607,6 @@ void AES128_CBC_encrypt_buffer(uint8_t* output, uint8_t* input, uint32_t length,
     Cipher();
   }
 }
-
-void AES128_CBC_decrypt_buffer(uint8_t* output, uint8_t* input, uint32_t length, const uint8_t* key, const uint8_t* iv)
-{
-  uintptr_t i;
-  uint8_t remainders = length % KEYLEN; /* Remaining bytes in the last non-full block */
-  
-  BlockCopy(output, input);
-  state = (state_t*)output;
-
-  // Skip the key expansion if key is passed as 0
-  if(0 != key)
-  {
-    Key = key;
-    KeyExpansion();
-  }
-
-  // If iv is passed as 0, we continue to encrypt without re-setting the Iv
-  if(iv != 0)
-  {
-    Iv = (uint8_t*)iv;
-  }
-
-  for(i = 0; i < length; i += KEYLEN)
-  {
-    BlockCopy(output, input);
-    state = (state_t*)output;
-    InvCipher();
-    XorWithIv(output);
-    Iv = input;
-    input += KEYLEN;
-    output += KEYLEN;
-  }
-
-  if(remainders)
-  {
-    BlockCopy(output, input);
-    memset(output+remainders, 0, KEYLEN - remainders); /* add 0-padding */
-    state = (state_t*)output;
-    InvCipher();
-  }
-}
-
 
 #endif // #if defined(CBC) && CBC
 
@@ -716,14 +676,14 @@ void SendingTemerature(sockfd,sensorid){
 	 senddata[0]=sensorid;
 	 senddata[1]=temperature;
 	 
-	 fp = fopen ("ininum.txt","r");
+	fp = fopen ("ininum.txt","r");
 	fscanf (fp, "%d", &enTTL);
 	for(n=0;n<4;n++){
 		fscanf (fp, ",%d", &iv[n]);
 		printf ("%d init number: :%d\n",n,iv[n]);
 	}
 	fclose(fp);
-	 fp = fopen ("sensor.conf","r");
+	fp = fopen ("sensor.conf","r");
 	fscanf (fp, "%d,", &sensorid);
 	for(n=0;n<4;n++){
 		fscanf (fp, "%d,", &key[n]);
@@ -766,27 +726,19 @@ void SendingTemerature(sockfd,sensorid){
 		recvdata[k]=bytetoint(&recv8[k*4]);
 		printf("encypted data :%d\n ",recvdata[k]);
 		}
-		for (k=0;k<4;k++){
-		key[k]=bytetoint(&key8[k*4]);
-		printf("key after data :%d\n ",key[k]);
-		}
+		
 	
 	Writen(sockfd, recv8, sizeof(uint8_t)*EnUnitSize*4 );
 	//Początek wymiany danych
-	while ( (n = read(sockfd, recvint, sizeof(int)*EnUnitSize)) > 0) {
-		recvint[n] = '\0';	/* null terminate */
-		printf("\nConnection with central unit %d\ninitialization number: %d %d %d %d\n", recvint[0],recvint[1],recvint[2],recvint[3],recvint[4]);
-		if(n==sizeof(int)*EnUnitSize)
-			break;
-	}
+	
 	enTTL--;
 	printf("\nenTTL send : %d\n",enTTL);
 	fp=fopen ("ininum.txt","w");
 	for(n=0;n<4;n++){
-		printf ("%d init number: :%d\n",n,iv[n]);
+		printf ("new IV number %d :: %d\n",n,recvdata[n]);
 	}
   		if (fp!=NULL){
-  			snprintf(sendline, sizeof(sendline),"%d,%d,%d,%d,%d",enTTL, iv[0], iv[1], iv[2], iv[3]);
+  			snprintf(sendline, sizeof(sendline),"%d,%d,%d,%d,%d",enTTL, recvdata[0],recvdata[1],recvdata[2],recvdata[3],recvdata[4]);
     		fputs (sendline,fp);
     		fclose (fp);
   		}

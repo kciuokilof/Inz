@@ -758,7 +758,8 @@ SensorCommunication(int currfd, int activeconns,uint8_t * recv8, int sensors, in
 	close(currfd);
 	return activeconns;
 }
-int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int arrayco){
+int 
+ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int arrayco){
 	char	sendline[70];
 	FILE 	*TemperatureArray;
 	time_t 	rawtime;
@@ -771,12 +772,9 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 	send8[16]='\0';
  	iv8[16]='\0';
  	key8[16]='\0';
-	
-	
 	for (k=0;k<4;k++){
 		inttobyte(tab[arrayco][k+1],&key8[k*4]);
 		inttobyte(tab[arrayco][k+6],&iv8[k*4]);
-
 	}
 	AES128_CBC_decrypt_buffer(&send8[0],&recv8[4], KEYLEN, &key8[0], &iv8[0]);
 		printf("\nSensor send this:%d \n",send8[15]);
@@ -788,8 +786,10 @@ int ReadingTemp(int currfd,int activeconns,uint8_t * recv8, int **tab, int array
 	for(k=0;k<4;k++){
 		recvdata[k]=bytetoint(&send8[k*4]);
 		printf("decrypted DATA int :%d\n",recvdata[k]);
+		tab[arrayco][k+6]=recvdata[k];
 	}
 		// We successfully read from the socket.
+		
 	TemperatureArray = fopen ("TemperatureArray", "a");
 	if (TemperatureArray!=NULL){
   			snprintf(sendline, sizeof(sendline),"%s-%d-%d\n", asctime(timeinfo),tab[arrayco][0], recvdata[0]);
