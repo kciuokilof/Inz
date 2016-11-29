@@ -2,6 +2,7 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 #include <string.h>
+#include <stdio.h>
 void handleErrors(void)
 {
   ERR_print_errors_fp(stderr);
@@ -91,17 +92,15 @@ int main (void)
    * real application? :-)
    */
 
-  /* A 256 bit key */
-  int aaa=4;
-  
+  /* A 256 bit key */  
   unsigned char *key = (unsigned char *)"01234567890123456789012345678901";
 
   /* A 128 bit IV */
-  unsigned char *iv = (unsigned char *)"01234567890123456";
+  unsigned char *iv = (unsigned char *)"0123456789012345";
 
   /* Message to be encrypted */
   unsigned char *plaintext =
-                (unsigned char *)"The quick brown fox jumps over the lazy dog";
+                (unsigned char *)"123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456";
 
   /* Buffer for ciphertext. Ensure the buffer is long enough for the
    * ciphertext which may be longer than the plaintext, dependant on the
@@ -118,12 +117,14 @@ int main (void)
   ERR_load_crypto_strings();
   OpenSSL_add_all_algorithms();
   OPENSSL_config(NULL);
-
-
-  int i;
-  i=getchar();
-	
   /* Encrypt the plaintext */
+  printf("strlen key:%d\n", strlen ((char *)key));
+    printf("strlen iv:%d\n", strlen ((char *)iv));
+
+  printf("strlen plaintext:%d\n", strlen ((char *)plaintext));
+  size_t size = sizeof(unsigned char*);
+  printf("sizeof char%d\n",size) ;
+
   ciphertext_len = encrypt (plaintext, strlen ((char *)plaintext), key, iv,
                             ciphertext);
 
@@ -148,3 +149,4 @@ int main (void)
 
   return 0;
 }
+
